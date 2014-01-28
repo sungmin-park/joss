@@ -11,6 +11,7 @@ import org.javaswift.joss.command.impl.core.httpstatus.HttpStatusMatch;
 import org.javaswift.joss.command.impl.core.httpstatus.HttpStatusSuccessCondition;
 import org.javaswift.joss.command.shared.object.UploadObjectCommand;
 import org.javaswift.joss.exception.CommandException;
+import org.javaswift.joss.headers.Header;
 import org.javaswift.joss.instructions.UploadInstructions;
 import org.javaswift.joss.model.Access;
 import org.javaswift.joss.model.Account;
@@ -37,6 +38,9 @@ public class UploadObjectCommandImpl extends AbstractObjectCommand<HttpPut, Obje
         setHeader(uploadInstructions.getObjectManifest());
         setHeader(uploadInstructions.getEtag());
         setHeader(uploadInstructions.getContentType());
+        for (Header header : uploadInstructions.getHeaders()) {
+            setHeader(header);
+        }
         request.setEntity(entity);
     }
 
@@ -49,11 +53,11 @@ public class UploadObjectCommandImpl extends AbstractObjectCommand<HttpPut, Obje
 
     @Override
     public HttpStatusChecker[] getStatusCheckers() {
-        return new HttpStatusChecker[] {
-            new HttpStatusSuccessCondition(new HttpStatusMatch(HttpStatus.SC_CREATED)),
-            new HttpStatusFailCondition(new HttpStatusMatch(HttpStatus.SC_LENGTH_REQUIRED)),
-            new HttpStatusFailCondition(new HttpStatusMatch(HttpStatus.SC_NOT_FOUND)),
-            new HttpStatusFailCondition(new HttpStatusMatch(HttpStatus.SC_UNPROCESSABLE_ENTITY))
+        return new HttpStatusChecker[]{
+                new HttpStatusSuccessCondition(new HttpStatusMatch(HttpStatus.SC_CREATED)),
+                new HttpStatusFailCondition(new HttpStatusMatch(HttpStatus.SC_LENGTH_REQUIRED)),
+                new HttpStatusFailCondition(new HttpStatusMatch(HttpStatus.SC_NOT_FOUND)),
+                new HttpStatusFailCondition(new HttpStatusMatch(HttpStatus.SC_UNPROCESSABLE_ENTITY))
         };
     }
 

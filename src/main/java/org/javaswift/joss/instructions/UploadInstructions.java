@@ -2,55 +2,74 @@ package org.javaswift.joss.instructions;
 
 import org.apache.http.HttpEntity;
 import org.javaswift.joss.exception.CommandException;
+import org.javaswift.joss.headers.Header;
 import org.javaswift.joss.headers.object.*;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
-* Specific instructions for uploading files. You can control the following aspects:
-* <ul>
-*     <li>md5 (aka etag); the hash of the file, which is useful when uploading from an
-*           InputStream, since it is not possible (desirable) to calculate a new MD5</li>
-*     <li>contentType; if you know better what content type the file is then the file
-*           extension matcher or content-sniffers, use this</li>
-*     <li>deleteAfter; order a file to be deleted after a certain number of seconds</li>
-*     <li>deleteAt; order a file to be deleted at a specific date</li>
-*     <li>objectManifest; if the file is to be a manifest for a number of segmented file
-*           that together comprise a single large file, use this</li>
-*     <li>segmentationSize; supply a custom segmentation size which determines how large
-*           a single segment can be</li>
-* </ul>
-*/
+ * Specific instructions for uploading files. You can control the following aspects:
+ * <ul>
+ * <li>md5 (aka etag); the hash of the file, which is useful when uploading from an
+ * InputStream, since it is not possible (desirable) to calculate a new MD5</li>
+ * <li>contentType; if you know better what content type the file is then the file
+ * extension matcher or content-sniffers, use this</li>
+ * <li>deleteAfter; order a file to be deleted after a certain number of seconds</li>
+ * <li>deleteAt; order a file to be deleted at a specific date</li>
+ * <li>objectManifest; if the file is to be a manifest for a number of segmented file
+ * that together comprise a single large file, use this</li>
+ * <li>segmentationSize; supply a custom segmentation size which determines how large
+ * a single segment can be</li>
+ * </ul>
+ */
 public class UploadInstructions {
 
-    /** Maximum segmentation size allowed by the ObjectStore. */
+    /**
+     * Maximum segmentation size allowed by the ObjectStore.
+     */
     public static Long MAX_SEGMENTATION_SIZE = 5368709120L; // 5 GB, max object size
 
-    /** Consists of either the File, InputStream or byte[] */
+    /**
+     * Consists of either the File, InputStream or byte[]
+     */
     private UploadPayload uploadPayload;
 
-    /** MD5 hash or etag of the payload */
+    /**
+     * MD5 hash or etag of the payload
+     */
     private String md5;
 
-    /** Content-Type of the payload */
+    /**
+     * Content-Type of the payload
+     */
     private ObjectContentType contentType;
 
-    /** After how many seconds the object must be deleted from the ObjectStore */
+    /**
+     * After how many seconds the object must be deleted from the ObjectStore
+     */
     private DeleteAfter deleteAfter;
 
-    /** At which time the object must be deleted from the ObjectStore */
+    /**
+     * At which time the object must be deleted from the ObjectStore
+     */
     private DeleteAt deleteAt;
 
     /**
-    * Determines whether the object is a manifest to a series of segments, together
-    * comprising a single large file. Also says where the segments are located.
-    */
+     * Determines whether the object is a manifest to a series of segments, together
+     * comprising a single large file. Also says where the segments are located.
+     */
     private ObjectManifest objectManifest;
 
-    /** Size at which a file must be segmented into smaller pieces */
+    /**
+     * Size at which a file must be segmented into smaller pieces
+     */
     private Long segmentationSize = MAX_SEGMENTATION_SIZE;
+
+    private List<Header> headers;
 
     public UploadInstructions(File fileToUpload) {
         this.uploadPayload = new UploadPayloadFile(fileToUpload);
@@ -67,6 +86,7 @@ public class UploadInstructions {
     /**
      * Facade method for checking out the payload to see if must be segmented. Used
      * internally.
+     *
      * @return true if segmentation is required
      */
     public boolean requiresSegmentation() {
@@ -74,10 +94,11 @@ public class UploadInstructions {
     }
 
     /**
-    * Facade method for determining the segmentation plan of the payload on the
-    * basis of the known segmentation size. Used internally.
-    * @return full-fledged segmentation plan
-    */
+     * Facade method for determining the segmentation plan of the payload on the
+     * basis of the known segmentation size. Used internally.
+     *
+     * @return full-fledged segmentation plan
+     */
     public SegmentationPlan getSegmentationPlan() {
         try {
             return this.uploadPayload.getSegmentationPlan(this.segmentationSize);
@@ -152,4 +173,37 @@ public class UploadInstructions {
         return this.deleteAfter;
     }
 
+    public List<Header> getHeaders() {
+        if (headers == null) {
+            headers = new ArrayList<Header>();
+        }
+        return headers;
+    }
+
+    public void setHeaders(List<Header> headers) {
+        this.headers = headers;
+    }
+    public void setHeader(String name, String value) {
+        this.getHeaders().add(new SimpleHeader(name, value));
+    }
+
+    public class SimpleHeader extends Header {
+        public SimpleHeader(String headerName, String headerValue) {
+            this.headerName = headerName;
+            this.headerValue = headerValue;
+        }
+
+        private String headerValue;
+        private String headerName;
+
+        @Override
+        public String getHeaderValue() {
+            return headerValue;
+        }
+
+        @Override
+        public String getHeaderName() {
+            return headerName;
+        }
+    }
 }
